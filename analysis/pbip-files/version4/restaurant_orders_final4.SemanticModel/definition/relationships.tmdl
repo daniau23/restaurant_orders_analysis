@@ -1,0 +1,10 @@
+relationship 09726388-8057-4ba2-8464-c8c09ccea76b
+	joinOnDateBehavior: datePartOnly
+	fromColumn: order_details.order_date
+	toColumn: LocalDateTable_03bf9514-8842-465a-9619-5a06471d4e1c.Date
+
+relationship 81dd814c-06dd-0ee3-5061-25158201e1f4
+	crossFilteringBehavior: bothDirections
+	fromColumn: order_details.item_id
+	toColumn: menu_items.menu_item_id
+

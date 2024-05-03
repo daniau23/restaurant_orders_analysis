@@ -1,0 +1,54 @@
+table menu_items
+	lineageTag: dabcd7c9-7791-4018-9c1b-5be25e23d1c9
+
+	column menu_item_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 39d436e9-b009-4899-9d2f-fb245bb9687b
+		summarizeBy: none
+		sourceColumn: menu_item_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column item_name
+		dataType: string
+		lineageTag: d9b9ef20-882a-4029-b06a-4819b1d5cbdd
+		summarizeBy: none
+		sourceColumn: item_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column category
+		dataType: string
+		lineageTag: bdb05afa-14cc-421b-b5f5-13ecf43274af
+		summarizeBy: none
+		sourceColumn: category
+
+		annotation SummarizationSetBy = Automatic
+
+	column price
+		dataType: double
+		lineageTag: 8a445063-6245-4b4b-bb55-0100283c8672
+		summarizeBy: none
+		sourceColumn: price
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition menu_items = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\DANNY\Desktop\machine\data_analysis\Restaurant_Orders\data\menu_items.csv"),[Delimiter=",", Columns=4, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"menu_item_id", Int64.Type}, {"item_name", type text}, {"category", type text}, {"price", type number}}),
+				    #"Sorted Rows" = Table.Sort(#"Changed Type",{{"menu_item_id", Order.Ascending}}),
+				    #"Filtered Rows" = Table.SelectRows(#"Sorted Rows", each true)
+				in
+				    #"Filtered Rows"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

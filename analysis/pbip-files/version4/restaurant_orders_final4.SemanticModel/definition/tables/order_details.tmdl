@@ -1,0 +1,122 @@
+table order_details
+	lineageTag: 5bce90a3-c7f9-4639-b3dc-67178c4c7c4e
+
+	measure 'Total Price Per Customer' =
+			
+			SUMX (
+			    SUMMARIZE (
+			        order_details,
+			        menu_items[menu_item_id],
+			        order_details[order_id],
+			        "Total Orders", COUNT ( order_details[order_id] ),
+			        "Total Price", SUM ( menu_items[price] )
+			    ),
+			    [Total Price]
+			)
+		formatString: 0
+		lineageTag: 62c061c0-73e0-4b6a-982c-417b1f2cc312
+
+	column order_details_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 6e941ead-b915-44e4-9b3c-0dd17613d779
+		summarizeBy: sum
+		sourceColumn: order_details_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_id
+		dataType: int64
+		formatString: 0
+		lineageTag: e26bbd1b-2afc-4497-9be7-8b03d0eba465
+		summarizeBy: sum
+		sourceColumn: order_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column item_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 999d072c-6e04-48dd-88b1-7b86e118cdb9
+		summarizeBy: none
+		sourceColumn: item_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 3323d535-0c8f-49c2-a87d-f248c9188345
+		summarizeBy: none
+		sourceColumn: order_date
+
+		variation Variation
+			isDefault
+			relationship: 09726388-8057-4ba2-8464-c8c09ccea76b
+			defaultHierarchy: LocalDateTable_03bf9514-8842-465a-9619-5a06471d4e1c.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column quarters
+		dataType: string
+		lineageTag: 1590cabe-1177-41b9-a418-fd53b3decb36
+		summarizeBy: none
+		sourceColumn: quarters
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_time
+		dataType: dateTime
+		formatString: Long Time
+		lineageTag: c6f1a7d0-1994-46af-aa5a-f8e794209ac7
+		summarizeBy: none
+		sourceColumn: order_time
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Time
+
+	column parts_of_day
+		dataType: string
+		lineageTag: 77a71ab8-2e29-48b0-b90a-b73e4ac8faa7
+		summarizeBy: none
+		sourceColumn: parts_of_day
+
+		annotation SummarizationSetBy = Automatic
+
+	partition order_details = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\DANNY\Desktop\machine\data_analysis\Restaurant_Orders\data\order_details.csv"),[Delimiter=",", Columns=5, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"order_details_id", Int64.Type}, {"order_id", Int64.Type}, {"order_date", type date}, {"order_time", type time}, {"item_id", type text}}),
+				    #"Sorted Rows" = Table.Sort(#"Changed Type",{{"item_id", Order.Ascending}, {"order_id", Order.Ascending}}),
+				    #"Filtered Rows" = Table.SelectRows(#"Sorted Rows", each true),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Filtered Rows",{{"item_id", Int64.Type}}),
+				    #"Filtered Rows1" = Table.SelectRows(#"Changed Type1", each ([item_id] <> null)),
+				    #"Added Custom" = Table.AddColumn(#"Filtered Rows1", "Custom", each if [order_time] < #time(6,0,0) then "Night Orders" else
+				  if [order_time] >= #time(6,0,0) and [order_time] <= #time(11,59,59) then "Morning Orders" else
+				  if [order_time] > #time(11,59,59) and [order_time] < #time(18,0,0) then "Afternoon Orders" else
+				  if [order_time] >= #time(18,0,0) then "Evening Orders" else "n/a"),
+				    #"Sorted Rows1" = Table.Sort(#"Added Custom",{{"order_time", Order.Ascending}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Sorted Rows1",{{"Custom", "parts_of_day"}}),
+				    #"Filtered Rows2" = Table.SelectRows(#"Renamed Columns", each true),
+				    #"Added Custom1" = Table.AddColumn(#"Filtered Rows2", "quarters", each if Date.Month([order_date]) >=1 and Date.Month([order_date]) <= 3 then "first_quarter" else
+				
+				if Date.Month([order_date]) >=4 and Date.Month([order_date]) <= 6 then "second_quarter" else
+				
+				if Date.Month([order_date]) >=7 and Date.Month([order_date]) <= 9 then "third_quarter" else
+				
+				if Date.Month([order_date]) >=10 and Date.Month([order_date]) <= 12 then "fourth_quarter" else "n/a"),
+				    #"Sorted Rows2" = Table.Sort(#"Added Custom1",{{"order_date", Order.Descending}}),
+				    #"Reordered Columns" = Table.ReorderColumns(#"Sorted Rows2",{"order_details_id", "order_id", "item_id", "order_date", "quarters", "order_time", "parts_of_day"})
+				in
+				    #"Reordered Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
